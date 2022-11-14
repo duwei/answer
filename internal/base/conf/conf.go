@@ -27,4 +27,5 @@ type Server struct {
 type Data struct {
 	Database *data.Database  `json:"database" mapstructure:"database"`
 	Cache    *data.CacheConf `json:"cache" mapstructure:"cache"`
+	Sam      *data.SamConf   `json:"sam" mapstructure:"sam"`
 }

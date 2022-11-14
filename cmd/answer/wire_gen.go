@@ -70,7 +70,7 @@ import (
 // Injectors from wire.go:
 
 // initApplication init application.
-func initApplication(debug bool, serverConf *conf.Server, dbConf *data.Database, cacheConf *data.CacheConf, i18nConf *translator.I18n, swaggerConf *router.SwaggerConfig, serviceConf *service_config.ServiceConfig, logConf log.Logger) (*pacman.Application, func(), error) {
+func initApplication(debug bool, serverConf *conf.Server, samConf *data.SamConf, dbConf *data.Database, cacheConf *data.CacheConf, i18nConf *translator.I18n, swaggerConf *router.SwaggerConfig, serviceConf *service_config.ServiceConfig, logConf log.Logger) (*pacman.Application, func(), error) {
 	staticRouter := router.NewStaticRouter(serviceConf)
 	i18nTranslator, err := translator.NewTranslator(i18nConf)
 	if err != nil {
@@ -86,6 +86,7 @@ func initApplication(debug bool, serverConf *conf.Server, dbConf *data.Database,
 		return nil, nil, err
 	}
 	dataData, cleanup2, err := data.NewData(engine, cache)
+	dataData.Sam = samConf
 	if err != nil {
 		cleanup()
 		return nil, nil, err
@@ -93,6 +94,7 @@ func initApplication(debug bool, serverConf *conf.Server, dbConf *data.Database,
 	authRepo := auth.NewAuthRepo(dataData)
 	authService := auth2.NewAuthService(authRepo)
 	configRepo := config.NewConfigRepo(dataData)
+	//configRepo.SetConfig("sam.uri", samConf.Uri)
 	userRepo := user.NewUserRepo(dataData, configRepo)
 	uniqueIDRepo := unique.NewUniqueIDRepo(dataData)
 	activityRepo := activity_common.NewActivityRepo(dataData, uniqueIDRepo, configRepo)

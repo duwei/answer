@@ -13,3 +13,7 @@ type Database struct {
 type CacheConf struct {
 	FilePath string `json:"file_path" mapstructure:"file_path"`
 }
+
+type SamConf struct {
+	Uri string `json:"uri" mapstructure:"uri"`
+}

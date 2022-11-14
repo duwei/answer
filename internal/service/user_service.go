@@ -114,16 +114,17 @@ func (us *UserService) GetOtherUserInfoByUsername(ctx context.Context, username 
 
 // EmailLogin email login
 func (us *UserService) EmailLogin(ctx context.Context, req *schema.UserEmailLogin) (resp *schema.GetUserResp, err error) {
-	userInfo, exist, err := us.userRepo.GetByEmail(ctx, req.Email)
+	//userInfo, exist, err := us.userRepo.GetByEmail(ctx, req.Email)
+	userInfo, exist, err := us.userRepo.GetBySam(ctx, req.Email, req.Pass)
 	if err != nil {
 		return nil, err
 	}
 	if !exist || userInfo.Status == entity.UserStatusDeleted {
 		return nil, errors.BadRequest(reason.EmailOrPasswordWrong)
 	}
-	if !us.verifyPassword(ctx, req.Pass, userInfo.Pass) {
-		return nil, errors.BadRequest(reason.EmailOrPasswordWrong)
-	}
+	//if !us.verifyPassword(ctx, req.Pass, userInfo.Pass) {
+	//	return nil, errors.BadRequest(reason.EmailOrPasswordWrong)
+	//}
 
 	err = us.userRepo.UpdateLastLoginDate(ctx, userInfo.ID)
 	if err != nil {
@@ -136,11 +137,15 @@ func (us *UserService) EmailLogin(ctx context.Context, req *schema.UserEmailLogi
 		UserID:      userInfo.ID,
 		EmailStatus: userInfo.MailStatus,
 		UserStatus:  userInfo.Status,
+		ExpiredAt:   userInfo.ExpiredAt,
 	}
-	resp.AccessToken, err = us.authService.SetUserCacheInfo(ctx, userCacheInfo)
+	//resp.AccessToken, err = us.authService.SetUserCacheInfo(ctx, userCacheInfo)
+	resp.AccessToken = userInfo.AccessToken
+	err = us.authService.SetSamUserCacheInfo(ctx, userCacheInfo, resp.AccessToken)
 	if err != nil {
 		return nil, err
 	}
+	// todo: set the admin flag if the user has permission key
 	resp.IsAdmin = userInfo.IsAdmin
 	if resp.IsAdmin {
 		err = us.authService.SetCmsUserCacheInfo(ctx, resp.AccessToken, userCacheInfo)

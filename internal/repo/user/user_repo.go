@@ -1,7 +1,12 @@
 package user
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"github.com/answerdev/answer/pkg/token"
+	"github.com/segmentfault/pacman/log"
+	"net/http"
 	"time"
 
 	"github.com/answerdev/answer/internal/base/data"
@@ -148,4 +153,130 @@ func (ur *userRepo) GetByEmail(ctx context.Context, email string) (userInfo *ent
 		err = errors.InternalServer(reason.DatabaseError).WithError(err).WithStack()
 	}
 	return
+}
+
+type SamLogin struct {
+	Code int    `json:"code"`
+	Msg  string `json:"msg"`
+	Data struct {
+		AccessToken string `json:"access_token"`
+		TokenType   string `json:"token_type"`
+		ExpiresIn   int    `json:"expires_in"`
+	} `json:"data"`
+}
+
+type SamProfile struct {
+	Code int    `json:"code"`
+	Msg  string `json:"msg"`
+	Data struct {
+		ID    int64  `json:"id"`
+		Name  string `json:"name"`
+		Email string `json:"email"`
+	} `json:"data"`
+}
+
+// GetByUserID get user info by user id
+func (ur *userRepo) GetBySamID(ctx context.Context, samID int64) (userInfo *entity.User, exist bool, err error) {
+	userInfo = &entity.User{}
+	exist, err = ur.data.DB.Where("sam_id = ?", samID).Get(userInfo)
+	if err != nil {
+		err = errors.InternalServer(reason.DatabaseError).WithError(err).WithStack()
+	}
+	return
+}
+
+// GetBySam get user by Sam
+func (ur *userRepo) GetBySam(ctx context.Context, email string, pass string) (userInfo *entity.User, exist bool, err error) {
+	values := map[string]string{"email": email, "password": pass}
+	jsonData, err := json.Marshal(values)
+	if err != nil {
+		err = errors.InternalServer(reason.RequestFormatError).WithError(err).WithStack()
+		return nil, false, err
+	}
+	samUri := ur.data.Sam.Uri
+	//samUri, err := ur.configRepo.GetString("sam.uri")
+	if err != nil {
+		err = errors.InternalServer(reason.SamUriNotFound).WithError(err).WithStack()
+		return nil, false, err
+	}
+	resp, err := http.Post(samUri+"/tess/login", "application/json",
+		bytes.NewBuffer(jsonData))
+	if err != nil {
+		return nil, false, err
+	}
+	defer resp.Body.Close()
+
+	var samLogin SamLogin
+	err = json.NewDecoder(resp.Body).Decode(&samLogin)
+	if err != nil {
+		return nil, false, err
+	}
+	if samLogin.Code != 0 {
+		err = errors.InternalServer(reason.SamReqError).WithError(err).WithStack()
+		return nil, false, err
+	}
+
+	var bearer = "Bearer " + samLogin.Data.AccessToken
+	req, err := http.NewRequest("GET", samUri+"/me", nil)
+	req.Header.Add("Authorization", bearer)
+	client := &http.Client{}
+	resp, err = client.Do(req)
+	if err != nil {
+		return nil, false, err
+	}
+	defer resp.Body.Close()
+
+	var samProfile SamProfile
+	err = json.NewDecoder(resp.Body).Decode(&samProfile)
+	if err != nil {
+		return nil, false, err
+	}
+
+	userInfo, exist, err = ur.GetBySamID(ctx, samProfile.Data.ID)
+	if err != nil || samProfile.Code != 0 {
+		return nil, false, err
+	}
+
+	if exist {
+		userInfo.AccessToken = samLogin.Data.AccessToken
+		//userInfo.ExpiredAt = time.Now().Add(time.Second * time.Duration(samLogin.Data.ExpiresIn))
+		userInfo.ExpiredAt = time.Now().Add(time.Second * 20)
+		err = ur.UpdateSamLogin(ctx, userInfo)
+		if err != nil {
+			log.Error("UpdateSamLogin", err.Error())
+		}
+	} else {
+		userInfo, err = ur.AddSamUser(ctx, samProfile)
+		if err != nil {
+			return nil, false, err
+		}
+	}
+	return userInfo, true, nil
+}
+
+// UpdateSamLogin update sam token data
+func (ur *userRepo) UpdateSamLogin(ctx context.Context, userInfo *entity.User) (err error) {
+	_, err = ur.data.DB.Where("id = ?", userInfo.ID).Cols("access_token", "expired_at").Update(userInfo)
+	if err != nil {
+		return errors.InternalServer(reason.DatabaseError).WithError(err).WithStack()
+	}
+	return nil
+}
+
+func (ur *userRepo) AddSamUser(ctx context.Context, samProfile SamProfile) (userInfo *entity.User, err error) {
+	userInfo = &entity.User{}
+	userInfo.SamId = samProfile.Data.ID
+	userInfo.EMail = samProfile.Data.Email
+
+	userInfo.Pass = token.GenerateToken()
+	userInfo.Username = samProfile.Data.Name
+	userInfo.DisplayName = samProfile.Data.Name
+	userInfo.MailStatus = entity.EmailStatusAvailable
+	userInfo.Status = entity.UserStatusAvailable
+
+	err = ur.AddUser(ctx, userInfo)
+	if err != nil {
+		return nil, errors.InternalServer(reason.DatabaseError).WithError(err).WithStack()
+	}
+	return userInfo, nil
 }

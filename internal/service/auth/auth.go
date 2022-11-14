@@ -58,6 +58,11 @@ func (as *AuthService) SetUserCacheInfo(ctx context.Context, userInfo *entity.Us
 	return accessToken, err
 }
 
+func (as *AuthService) SetSamUserCacheInfo(ctx context.Context, userInfo *entity.UserCacheInfo, accessToken string) (err error) {
+	err = as.authRepo.SetUserCacheInfo(ctx, accessToken, userInfo)
+	return err
+}
+
 func (as *AuthService) UpdateUserCacheInfo(ctx context.Context, token string, userInfo *entity.UserCacheInfo) (err error) {
 	err = as.authRepo.SetUserCacheInfo(ctx, token, userInfo)
 	if err != nil {

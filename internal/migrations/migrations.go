@@ -43,6 +43,7 @@ var noopMigration = func(_ *xorm.Engine) error { return nil }
 var migrations = []Migration{
 	// 0->1
 	NewMigration("this is first version, no operation", noopMigration),
+	NewMigration("add sam fields", addSamToUser),
 }
 
 // GetCurrentDBVersion returns the current db version

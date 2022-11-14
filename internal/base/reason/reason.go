@@ -11,6 +11,8 @@ const (
 	UnauthorizedError = "base.unauthorized_error"
 	// DatabaseError database error
 	DatabaseError = "base.database_error"
+	// SamReqError sam request error
+	SamReqError = "base.sam_error"
 )
 
 const (
@@ -38,4 +40,5 @@ const (
 	LangNotFound                 = "error.lang.not_found"
 	ReportHandleFailed           = "error.report.handle_failed"
 	ReportNotFound               = "error.report.not_found"
+	SamUriNotFound               = "error.sam.not_found"
 )

@@ -26,6 +26,7 @@ import (
 func initApplication(
 	debug bool,
 	serverConf *conf.Server,
+	samConf *data.SamConf,
 	dbConf *data.Database,
 	cacheConf *data.CacheConf,
 	i18nConf *translator.I18n,

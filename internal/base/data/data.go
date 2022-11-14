@@ -21,6 +21,7 @@ import (
 type Data struct {
 	DB    *xorm.Engine
 	Cache cache.Cache
+	Sam   *SamConf
 }
 
 // NewData new data instance

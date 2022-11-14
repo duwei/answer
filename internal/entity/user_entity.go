@@ -45,6 +45,9 @@ type User struct {
 	Location       string    `xorm:"not null default '' VARCHAR(100) location"`
 	IPInfo         string    `xorm:"not null default '' VARCHAR(255) ip_info"`
 	IsAdmin        bool      `xorm:"not null default false BOOL is_admin"`
+	SamId          int64     `xorm:"not null default 0 sam_id"`
+	AccessToken    string    `xorm:"not null default '' access_token"`
+	ExpiredAt      time.Time `xorm:"TIMESTAMP expired_at"`
 }
 
 // TableName user table name
