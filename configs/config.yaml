@@ -7,6 +7,8 @@ data:
     connection: "/data/sqlite3/answer.db"
   cache:
     file_path: "/data/cache/cache.db"
+  sam:
+    uri: "https://tessverso.io/sam/api"
 i18n:
   bundle_dir: "/data/i18n"
 swaggerui:
