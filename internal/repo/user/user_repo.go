@@ -239,14 +239,13 @@ func (ur *userRepo) GetBySam(ctx context.Context, email string, pass string) (us
 
 	if exist {
 		userInfo.AccessToken = samLogin.Data.AccessToken
-		//userInfo.ExpiredAt = time.Now().Add(time.Second * time.Duration(samLogin.Data.ExpiresIn))
-		userInfo.ExpiredAt = time.Now().Add(time.Second * 20)
+		userInfo.ExpiredAt = time.Now().Add(time.Second * time.Duration(samLogin.Data.ExpiresIn))
 		err = ur.UpdateSamLogin(ctx, userInfo)
 		if err != nil {
 			log.Error("UpdateSamLogin", err.Error())
 		}
 	} else {
-		userInfo, err = ur.AddSamUser(ctx, samProfile)
+		userInfo, err = ur.AddSamUser(ctx, samLogin, samProfile)
 		if err != nil {
 			return nil, false, err
 		}
@@ -263,10 +262,12 @@ func (ur *userRepo) UpdateSamLogin(ctx context.Context, userInfo *entity.User) (
 	return nil
 }
 
-func (ur *userRepo) AddSamUser(ctx context.Context, samProfile SamProfile) (userInfo *entity.User, err error) {
+func (ur *userRepo) AddSamUser(ctx context.Context, samLogin SamLogin, samProfile SamProfile) (userInfo *entity.User, err error) {
 	userInfo = &entity.User{}
 	userInfo.SamId = samProfile.Data.ID
 	userInfo.EMail = samProfile.Data.Email
+	userInfo.AccessToken = samLogin.Data.AccessToken
+	userInfo.ExpiredAt = time.Now().Add(time.Second * time.Duration(samLogin.Data.ExpiresIn))
 
 	userInfo.Pass = token.GenerateToken()
 	userInfo.Username = samProfile.Data.Name
