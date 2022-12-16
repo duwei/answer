@@ -44,6 +44,7 @@ var migrations = []Migration{
 	// 0->1
 	NewMigration("this is first version, no operation", noopMigration),
 	NewMigration("add sam fields", addSamToUser),
+	NewMigration("increase access token field", increaseAccessToken),
 }
 
 // GetCurrentDBVersion returns the current db version

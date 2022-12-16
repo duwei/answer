@@ -37,9 +37,9 @@ func NewCaptchaService(captchaRepo CaptchaRepo) *CaptchaService {
 func (cs *CaptchaService) ActionRecord(ctx context.Context, req *schema.ActionRecordReq) (resp *schema.ActionRecordResp, err error) {
 	resp = &schema.ActionRecordResp{}
 	num, err := cs.captchaRepo.GetActionType(ctx, req.IP, req.Action)
-	if err != nil {
-		num = 0
-	}
+	//if err != nil {
+	num = 0
+	//}
 	// TODO config num to config file
 	if num >= 3 {
 		resp.CaptchaID, resp.CaptchaImg, err = cs.GenerateCaptcha(ctx)
